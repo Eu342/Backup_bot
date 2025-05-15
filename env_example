@@ -1,0 +1,36 @@
+#Порт для работы 
+PORT=7967
+# Переодичность создания бекапов
+DUMP_INTERVAL_HOURS=1
+# Telegram-бот токен и юзер-ID пользователей
+TELEGRAM_BOT_TOKEN=#ТОКЕНБОТАТГСЮДА
+ADMIN_LIST=0000000000
+# Адрес для выгрузки по запросу
+FILE_EXCHANGE_API_URL=https://storage.savesafe.cc/upload
+# Postgres База данных (до 5 БД)
+POSTGRES_DB_1_NAME=#databasename
+POSTGRES_DB_1_HOST=127.0.0.1
+POSTGRES_DB_1_PORT=5432
+POSTGRES_DB_1_USER=backup_user
+POSTGRES_DB_1_PASSWORD=#yourpassword
+#2 база Postgre
+#POSTGRES_DB_1_NAME=opengater_prod
+#POSTGRES_DB_1_HOST=127.0.0.1
+#POSTGRES_DB_1_PORT=5432
+#POSTGRES_DB_1_USER=backup_user
+#POSTGRES_DB_1_PASSWORD=#yourpassword
+# MySQL База данных (до 5 БД)
+MYSQL_DB_1_NAME=#databasename
+MYSQL_DB_1_HOST=#databasehost
+MYSQL_DB_1_PORT=3306
+MYSQL_DB_1_USER=backup_user
+MYSQL_DB_1_PASSWORD=#yourpassword
+# 2 база MySQL
+#MYSQL_DB_1_NAME=#databasename
+#MYSQL_DB_1_HOST=#databasehost
+#MYSQL_DB_1_PORT=3306
+#MYSQL_DB_1_USER=backup_user
+#MYSQL_DB_1_PASSWORD=#yourpassword
+# Yandex Disk токен и путь сохранения
+YANDEX_DISK_TOKEN=#ТОКЕНЯНДЕКСАСЮДА
+YANDEX_DISK_BACKUP_FOLDER=/backup_folder
