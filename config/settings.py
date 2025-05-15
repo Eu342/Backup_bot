@@ -32,7 +32,7 @@ FILE_EXCHANGE_API_URL = os.getenv('FILE_EXCHANGE_API_URL', '')
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 ADMIN_LIST = os.getenv('ADMIN_LIST', '').split(',')
 
-# Инициализация бота (без ручной сессии)
+# Инициализация бота
 telegram_bot = Bot(token=TELEGRAM_BOT_TOKEN) if TELEGRAM_BOT_TOKEN else None
 dp = Dispatcher(storage=MemoryStorage()) if telegram_bot else None
 logger.debug(f"Инициализирован dp с id: {id(dp) if dp else None}")
@@ -40,6 +40,7 @@ logger.debug(f"Инициализирован dp с id: {id(dp) if dp else None}
 # Конфигурация баз данных
 POSTGRES_DBS = []
 MYSQL_DBS = []
+MARIADB_DBS = []
 for i in range(1, 10):
     pg_db = {
         'dbname': os.getenv(f'POSTGRES_DB_{i}_NAME'),
@@ -62,5 +63,16 @@ for i in range(1, 10):
     if all([mysql_db['database'], mysql_db['host'], mysql_db['user'], mysql_db['password']]):
         MYSQL_DBS.append(mysql_db)
         logger.debug(f"Загружена MySQL база {i}: {mysql_db['database']}")
+    
+    mariadb_db = {
+        'database': os.getenv(f'MARIADB_DB_{i}_NAME'),
+        'host': os.getenv(f'MARIADB_DB_{i}_HOST'),
+        'port': os.getenv(f'MARIADB_DB_{i}_PORT', '3306'),
+        'user': os.getenv(f'MARIADB_DB_{i}_USER'),
+        'password': os.getenv(f'MARIADB_DB_{i}_PASSWORD')
+    }
+    if all([mariadb_db['database'], mariadb_db['host'], mariadb_db['user'], mariadb_db['password']]):
+        MARIADB_DBS.append(mariadb_db)
+        logger.debug(f"Загружена MariaDB база {i}: {mariadb_db['database']}")
 
-logger.debug(f"Всего загружено: {len(POSTGRES_DBS)} PostgreSQL баз, {len(MYSQL_DBS)} MySQL баз")
+logger.debug(f"Всего загружено: {len(POSTGRES_DBS)} PostgreSQL баз, {len(MYSQL_DBS)} MySQL баз, {len(MARIADB_DBS)} MariaDB баз")
