@@ -1,18 +1,38 @@
 import aiohttp
+import os
 from config.settings import YANDEX_DISK_TOKEN, YANDEX_DISK_BACKUP_FOLDER, logger
 from tenacity import retry, stop_after_attempt, wait_fixed, retry_if_exception_type
 from datetime import datetime, timedelta, timezone
+import traceback
 
-@retry(stop=stop_after_attempt(3), wait=wait_fixed(5), retry=retry_if_exception_type(aiohttp.ClientError))
+@retry(stop=stop_after_attempt(3), wait=wait_fixed(10), retry=retry_if_exception_type(aiohttp.ClientError))
 async def upload_to_yandex_disk_rest(zip_file, db_name):
     """Загрузка ZIP-файла на Яндекс.Диск через REST API с aiohttp."""
     if not YANDEX_DISK_TOKEN or not YANDEX_DISK_BACKUP_FOLDER:
         logger.debug("Загрузка на Яндекс.Диск отключена (отсутствует YANDEX_DISK_TOKEN или YANDEX_DISK_BACKUP_FOLDER)")
         return False
     
+    start_time = datetime.now(timezone.utc)
+    file_size = os.path.getsize(zip_file) / 1_048_576  # Размер в МБ
+    logger.debug(f"Начало загрузки {zip_file} на Яндекс.Диск: {start_time}, размер: {file_size:.2f} МБ")
+    
     async with aiohttp.ClientSession() as session:
         try:
             headers = {"Authorization": f"OAuth {YANDEX_DISK_TOKEN}"}
+            
+            # Проверка токена
+            async with session.get("https://cloud-api.yandex.net/v1/disk", headers=headers, timeout=5) as token_response:
+                if token_response.status != 200:
+                    logger.error(f"Невалидный токен Яндекс.Диска: {token_response.status} {await token_response.text()}")
+                    raise aiohttp.ClientError(f"Invalid token: {token_response.status}")
+                logger.debug(f"Токен Яндекс.Диска валиден: {token_response.status}")
+            
+            # Проверка сети
+            try:
+                async with session.get("https://cloud-api.yandex.net/ping", timeout=5) as ping_response:
+                    logger.debug(f"Пинг до Яндекс.Диска: {ping_response.status}")
+            except Exception as ping_err:
+                logger.warning(f"Не удалось проверить пинг до Яндекс.Диска: {ping_err}")
             
             folder_url = f"https://cloud-api.yandex.net/v1/disk/resources?path=disk:{YANDEX_DISK_BACKUP_FOLDER}"
             async with session.get(folder_url, headers=headers, timeout=10) as folder_response:
@@ -54,16 +74,18 @@ async def upload_to_yandex_disk_rest(zip_file, db_name):
                     raise aiohttp.ClientError("No upload URL")
             
             with open(zip_file, 'rb') as f:
-                async with session.put(put_url, data=f, timeout=60) as put_response:
+                async with session.put(put_url, data=f, chunked=True, timeout=600) as put_response:
                     put_response.raise_for_status()
             
-            logger.info(f"Загружен файл {zip_file} на Яндекс.Диск: {remote_path}")
+            end_time = datetime.now(timezone.utc)
+            duration = (end_time - start_time).total_seconds()
+            logger.info(f"Загружен файл {zip_file} на Яндекс.Диск: {remote_path}, размер: {file_size:.2f} МБ, время: {duration:.2f} сек")
             return True
         except aiohttp.ClientError as e:
-            logger.error(f"Сетевая ошибка при загрузке {zip_file} на Яндекс.Диск: {e}")
+            logger.error(f"Сетевая ошибка при загрузке {zip_file} на Яндекс.Диск: {e}\n{traceback.format_exc()}")
             return False
         except Exception as e:
-            logger.error(f"Не удалось загрузить {zip_file} на Яндекс.Диск: {e}")
+            logger.error(f"Не удалось загрузить {zip_file} на Яндекс.Диск: {e}\n{traceback.format_exc()}")
             return False
 
 async def cleanup_yandex_disk_backups():
